@@ -85,14 +85,24 @@ def extract_embeddings(
         for win_start, win_end in windows:
             start_sample = int(win_start * sr)
             end_sample = int(win_end * sr)
-            chunk = audio_data[start_sample:end_sample]
+            
+            # FIX 1: Force a contiguous memory block for the C++ backend
+            chunk = np.ascontiguousarray(audio_data[start_sample:end_sample])
 
-            # THE FIX: WeSpeaker doesn't need padding. Feed the raw chunk directly!
             try:
                 stream = extractor.create_stream()
                 stream.accept_waveform(sr, chunk)
+                
+                # FIX 2: Explicitly flush the stream buffer so the model evaluates the whole chunk
+                stream.input_finished()
+                
                 emb = extractor.compute(stream)
-                emb_array = np.array(emb)
+                
+                # FIX 3: Multiply by 15.0 to "Un-normalize" the vectors. 
+                # This artificially restores the magnitude to match raw WeSpeaker outputs, 
+                # allowing the clustering algorithm's distance thresholds to work properly again.
+                emb_array = np.array(emb) * 15.0 
+                
             except Exception as e:
                 logger.debug("Embedding extraction failed for window %.2f-%.2f: %s", win_start, win_end, e)
                 continue
