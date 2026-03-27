@@ -1,5 +1,5 @@
-# diarize
-
+# diarize-light
+Fork of FoxNoseTech's diarize: Removing dependencies on torch, torchaudio and silero_vad. Use onnxruntime directly.
 [![PyPI version](https://img.shields.io/pypi/v/diarize?v=1)](https://pypi.org/project/diarize/)
 [![Python versions](https://img.shields.io/pypi/pyversions/diarize?v=1)](https://pypi.org/project/diarize/)
 [![License](https://img.shields.io/pypi/l/diarize?v=1)](LICENSE)
