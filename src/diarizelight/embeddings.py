@@ -106,10 +106,9 @@ def extract_embeddings(
                 embeddings.append(emb_array)
                 subsegments.append(SubSegment(start=win_start, end=win_end, parent_idx=idx))
 
-    # TitaNet produces 192-dim vectors (WeSpeaker produces 256-dim). 
-    # Downstream clustering algorithms dynamically read the shape, so both work perfectly.
+   # Downstream clustering algorithms dynamically read the shape, so both work perfectly.
     if not embeddings:
-        return np.empty((0, 192), dtype=np.float32), []
+        return np.empty((0, 256), dtype=np.float32), []
 
     X = np.stack(embeddings)  # (N, D)
     logger.info("Extracted %d embeddings (dim=%d)", X.shape[0], X.shape[1])
