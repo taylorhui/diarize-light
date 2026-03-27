@@ -2,7 +2,7 @@
 
 **Fork of FoxNoseTech's diarize: Removing dependencies on torch, torchaudio and silero_vad. Use onnxruntime directly.**
 
-Speaker diarization for Python — answers "who spoke when?" in any audio file.
+Speaker diarization for Python — answers "who spoke when?" in audio file.
 
 Runs on CPU. No GPU, no API keys, no account signup. Apache 2.0 licensed. 
 
@@ -18,7 +18,7 @@ for seg in result.segments:
     print(f"  [{seg.start:.1f}s - {seg.end:.1f}s] {seg.speaker}")
 ```
 
-## Quick Start (Same as FoxNoseTech's diarize)
+## Quick Start (Similar to FoxNoseTech's diarize)
 
 ```python
 from diarize-light import diarize
@@ -33,7 +33,7 @@ for seg in result.segments:
 result.to_rttm("meeting.rttm")
 ```
 
-Requires Python 3.9+. Supports WAV (or formats supportedd by soundfile).
+Requires Python 3.9+. Supports WAV (or formats supported by soundfile).
 `diarize-light` does not use `torch/torchaudio` for simplicity.
 
 📖 **[Full documentation from FoxNoseTech](https://foxnosetech.github.io/diarize/)** — API reference, architecture, benchmarks.
@@ -47,7 +47,6 @@ All dependencies are permissively licensed:
 - Silero VAD: MIT
 - WeSpeaker: Apache 2.0
 - scikit-learn: BSD
-- PyTorch: BSD
 
 ## Contributing
 
