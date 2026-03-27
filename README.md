@@ -45,7 +45,7 @@ pyannote numbers are self-reported from their [benchmark page](https://huggingfa
 ## Quick Start
 
 ```python
-from diarize import diarize
+from diarize-light import diarize
 
 result = diarize("meeting.wav")
 
@@ -57,8 +57,8 @@ for seg in result.segments:
 result.to_rttm("meeting.rttm")
 ```
 
-Requires Python 3.9+. Supports WAV, MP3, FLAC, OGG, and other formats via soundfile/libsndfile.
-`diarize` pins a compatible `torch/torchaudio` range during install, so no extra manual pinning is required.
+Requires Python 3.9+. Supports WAV.
+`diarize-light` does not use `torch/torchaudio` for simplicity.
 
 📖 **[Full documentation](https://foxnosetech.github.io/diarize/)** — installation, API reference, architecture, benchmarks.
 

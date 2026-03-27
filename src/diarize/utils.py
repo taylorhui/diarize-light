@@ -236,16 +236,10 @@ def get_audio_duration(audio_path: str | Path) -> float:
     try:
         info = sf.info(str(audio_path))
         return info.duration
-    except Exception as exc:
-        logger.debug("soundfile failed for %s: %s", audio_path, exc)
-        try:
-            import torchaudio
-
-            info = torchaudio.info(str(audio_path))
-            return info.num_frames / info.sample_rate
-        except Exception as exc2:
-            logger.warning("Could not determine duration for %s: %s", audio_path, exc2)
-            return 0.0
+    # Taylor Hui: Removed fallback to torchaudio to keep this light
+    except Exception as exc2:
+        logger.warning("Could not determine duration for %s: %s", audio_path, exc2)
+        return 0.0
 
 
 def format_timestamp(seconds: float) -> str:
