@@ -52,7 +52,7 @@ def extract_embeddings(
         
     # Initialize the lightweight Sherpa-ONNX Extractor
     config = sherpa_onnx.SpeakerEmbeddingExtractorConfig(
-        model=EMBEDDING_MODEL_PATH,
+        wespeaker=EMBEDDING_MODEL_PATH,  # <-- CRITICAL: Use 'wespeaker=', not 'model='
         num_threads=4
     )
     extractor = sherpa_onnx.SpeakerEmbeddingExtractor(config)
@@ -101,7 +101,8 @@ def extract_embeddings(
                 # FIX 3: Multiply by 15.0 to "Un-normalize" the vectors. 
                 # This artificially restores the magnitude to match raw WeSpeaker outputs, 
                 # allowing the clustering algorithm's distance thresholds to work properly again.
-                emb_array = np.array(emb) * 15.0 
+                emb_array = np.array(emb) * 15.0
+                logger.info(f"Embedding Variance Check: {np.sum(emb_array):.2f}")
                 
             except Exception as e:
                 logger.debug("Embedding extraction failed for window %.2f-%.2f: %s", win_start, win_end, e)
