@@ -33,9 +33,9 @@ EMBEDDING_WINDOW: float = 1.2
 #: Sliding window step size (seconds).  Overlap = WINDOW − STEP.
 EMBEDDING_STEP: float = 0.6
 
-# --- NEW: WeSpeaker ResNet34 Model ---
-EMBEDDING_MODEL_PATH = "wespeaker_en_voxceleb_resnet34.onnx"
-WESPEAKER_URL = "https://huggingface.co/csukuangfj/speaker-embedding-models/resolve/main/wespeaker_en_voxceleb_resnet34.onnx"
+# Use the proven 3dspeaker model
+EMBEDDING_MODEL_PATH = "3dspeaker_speech_eres2net_base_sv_zh-cn_3dspeaker_16k.onnx"
+EMBEDDING_MODEL_DL_URL = "https://huggingface.co/csukuangfj/speaker-embedding-models/resolve/main/3dspeaker_speech_eres2net_base_sv_zh-cn_3dspeaker_16k.onnx"
 
 def extract_embeddings(
     audio_path: str | Path,
@@ -48,7 +48,7 @@ def extract_embeddings(
     # NEW: Download WeSpeaker if missing
     if not os.path.exists(EMBEDDING_MODEL_PATH):
         logger.info(f"Downloading {EMBEDDING_MODEL_PATH}...")
-        urllib.request.urlretrieve(WESPEAKER_URL, EMBEDDING_MODEL_PATH)
+        urllib.request.urlretrieve(EMBEDDING_MODEL_DL_URL, EMBEDDING_MODEL_PATH)
         
     # Initialize the lightweight Sherpa-ONNX Extractor
     config = sherpa_onnx.SpeakerEmbeddingExtractorConfig(
