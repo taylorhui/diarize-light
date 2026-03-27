@@ -1,7 +1,7 @@
-"""Speaker embedding extraction using WeSpeaker ResNet34-LM (ONNX).
+"""Speaker embedding extraction using sherpa-onnx.
 
-Extracts 256-dimensional speaker embeddings from audio segments detected
-by VAD.  Long segments are split with a sliding window so that each
+Extracts speaker embeddings from audio segments detected
+by VAD. Long segments are split with a sliding window so that each
 window produces its own embedding, improving clustering granularity.
 """
 
@@ -9,11 +9,12 @@ from __future__ import annotations
 
 import logging
 import os
-import tempfile
+import urllib.request
 from pathlib import Path
 
 import numpy as np
 import soundfile as sf
+import sherpa_onnx
 
 from .utils import SpeechSegment, SubSegment
 
@@ -24,8 +25,6 @@ __all__ = ["extract_embeddings"]
 # ── Constants ────────────────────────────────────────────────────────────────
 
 #: Minimum segment duration for embedding extraction (seconds).
-#: Segments shorter than this are skipped during embedding extraction
-#: and later assigned the nearest speaker label.
 MIN_SEGMENT_DURATION: float = 0.4
 
 #: Sliding window length for splitting long segments (seconds).
@@ -34,50 +33,33 @@ EMBEDDING_WINDOW: float = 1.2
 #: Sliding window step size (seconds).  Overlap = WINDOW − STEP.
 EMBEDDING_STEP: float = 0.6
 
+# Local Model Path (Update this if you prefer a different model)
+EMBEDDING_MODEL_PATH = "nemo_en_titanet_large.onnx"
+TITANET_URL = "https://huggingface.co/csukuangfj/speaker-embedding-models/resolve/main/nemo_en_titanet_large.onnx"
+
 
 def extract_embeddings(
     audio_path: str | Path,
     speech_segments: list[SpeechSegment],
 ) -> tuple[np.ndarray, list[SubSegment]]:
-    """Extract 256-dim speaker embeddings using WeSpeaker ResNet34-LM (ONNX).
+    """Extract speaker embeddings using sherpa-onnx purely in RAM."""
 
-    Long segments are split using a sliding window for more accurate
-    clustering.  Each window produces its own embedding.
+    logger.info("Extracting speaker embeddings (sherpa-onnx)...")
 
-    Args:
-        audio_path: Path to the audio file (wav, mp3, flac, etc.).
-        speech_segments: Speech segments detected by VAD.
+    # Fallback to download the model if it's missing
+    if not os.path.exists(EMBEDDING_MODEL_PATH):
+        logger.info(f"Downloading {EMBEDDING_MODEL_PATH}...")
+        urllib.request.urlretrieve(TITANET_URL, EMBEDDING_MODEL_PATH)
 
-    Returns:
-        A ``(embeddings, subsegments)`` tuple where:
+    # Initialize the lightweight Sherpa-ONNX Extractor
+    config = sherpa_onnx.SpeakerEmbeddingExtractorConfig(
+        model=EMBEDDING_MODEL_PATH,
+        num_threads=4
+    )
+    extractor = sherpa_onnx.SpeakerEmbeddingExtractor(config)
 
-        -   **embeddings** --- ``np.ndarray`` of shape ``(N, 256)`` with
-            raw speaker embeddings (not yet L2-normalised; normalisation
-            is applied later during clustering).
-        -   **subsegments** --- list of :class:`SubSegment` objects that
-            record the time window and parent segment index for each
-            embedding row.
-
-    Raises:
-        FileNotFoundError: If *audio_path* does not exist.
-
-    Example::
-
-        from diarize.vad import run_vad
-        from diarize.embeddings import extract_embeddings
-
-        segments = run_vad("meeting.wav")
-        embeddings, subs = extract_embeddings("meeting.wav", segments)
-        print(embeddings.shape)  # (N, 256)
-    """
-    import wespeakerruntime as wespeaker_rt
-
-    logger.info("Extracting speaker embeddings (WeSpeaker ResNet34-LM, 256-dim)...")
-
-    model = wespeaker_rt.Speaker(lang="en")
-
-    # Load full audio for segment slicing
-    audio_data, sr = sf.read(str(audio_path))
+    # Load full audio directly into memory
+    audio_data, sr = sf.read(str(audio_path), dtype="float32")
     if audio_data.ndim > 1:
         audio_data = audio_data.mean(axis=1)  # stereo → mono
 
@@ -104,39 +86,32 @@ def extract_embeddings(
         for win_start, win_end in windows:
             start_sample = int(win_start * sr)
             end_sample = int(win_end * sr)
-            segment_audio = audio_data[start_sample:end_sample]
+            chunk = audio_data[start_sample:end_sample]
 
-            tmp_path: str | None = None
+            # SAFETY PAD: Round up to nearest whole second to prevent ONNX crashes
+            target_samples = int(np.ceil(len(chunk) / sr) * sr)
+            target_samples = max(target_samples, 2 * sr)  # Force at least 2 seconds
+            padded_chunk = np.pad(chunk, (0, target_samples - len(chunk)), 'constant')
+
             try:
-                # wespeakerruntime accepts file paths — write segment to a temp wav
-                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-                    tmp_path = tmp.name
-                    sf.write(tmp_path, segment_audio, sr)
-
-                emb = model.extract_embedding(tmp_path)
-            except Exception:
-                logger.debug(
-                    "Embedding extraction failed for window %.2f-%.2f",
-                    win_start,
-                    win_end,
-                )
+                # Pass directly through RAM (No temp files needed!)
+                stream = extractor.create_stream()
+                stream.accept_waveform(sr, padded_chunk)
+                emb = extractor.compute(stream)
+                emb_array = np.array(emb)
+            except Exception as e:
+                logger.debug("Embedding extraction failed for window %.2f-%.2f: %s", win_start, win_end, e)
                 continue
-            finally:
-                if tmp_path is not None:
-                    try:
-                        os.unlink(tmp_path)
-                    except OSError:
-                        pass
 
-            if emb is not None:
-                if emb.ndim == 2:
-                    emb = emb[0]
-                embeddings.append(emb)
+            if emb_array is not None:
+                embeddings.append(emb_array)
                 subsegments.append(SubSegment(start=win_start, end=win_end, parent_idx=idx))
 
+    # TitaNet produces 192-dim vectors (WeSpeaker produces 256-dim). 
+    # Downstream clustering algorithms dynamically read the shape, so both work perfectly.
     if not embeddings:
-        return np.empty((0, 256), dtype=np.float32), []
+        return np.empty((0, 192), dtype=np.float32), []
 
-    X = np.stack(embeddings)  # (N, 256)
+    X = np.stack(embeddings)  # (N, D)
     logger.info("Extracted %d embeddings (dim=%d)", X.shape[0], X.shape[1])
     return X, subsegments

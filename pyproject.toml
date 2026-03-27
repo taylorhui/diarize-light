@@ -52,7 +52,7 @@ dependencies = [
     "pydantic>=2.0",
     "eval_type_backport>=0.2.0; python_version < '3.10'",
     "soundfile>=0.12",
-    "wespeakerruntime>=1.0",
+    "sherpa-onnx>=1.10.31",
     "scikit-learn>=1.2"
 ]
 
