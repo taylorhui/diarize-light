@@ -51,7 +51,7 @@ def run_vad(
     total_audio_sec = len(waveform) / sample_rate
 
     # 2. Setup ONNX Session dynamically supporting v3, v4, and v5
-    session = ort.InferenceSession(SILERO_MODEL_PATH, providers=['CPUExecutionProvider'])
+    session = ort.InferenceSession(SILERO_MODEL_PATH, providers=['CPUExecutionProvider'], threads=4)
     input_names = [i.name for i in session.get_inputs()]
     audio_input_name = 'x' if 'x' in input_names else 'input'
     

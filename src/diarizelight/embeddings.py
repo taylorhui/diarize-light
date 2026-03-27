@@ -52,7 +52,7 @@ def extract_embeddings(
         
     # Initialize the lightweight Sherpa-ONNX Extractor
     config = sherpa_onnx.SpeakerEmbeddingExtractorConfig(
-        wespeaker=EMBEDDING_MODEL_PATH,  # <-- CRITICAL: Use 'wespeaker=', not 'model='
+        model=EMBEDDING_MODEL_PATH,
         num_threads=4
     )
     extractor = sherpa_onnx.SpeakerEmbeddingExtractor(config)
