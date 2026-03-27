@@ -87,22 +87,17 @@ def extract_embeddings(
             end_sample = int(win_end * sr)
             chunk = audio_data[start_sample:end_sample]
 
-            # SAFETY PAD: Round up to nearest whole second to prevent ONNX crashes
-            target_samples = int(np.ceil(len(chunk) / sr) * sr)
-            target_samples = max(target_samples, 2 * sr)  # Force at least 2 seconds
-            padded_chunk = np.pad(chunk, (0, target_samples - len(chunk)), 'constant')
-
+            # THE FIX: WeSpeaker doesn't need padding. Feed the raw chunk directly!
             try:
-                # Pass directly through RAM (No temp files needed!)
                 stream = extractor.create_stream()
-                stream.accept_waveform(sr, padded_chunk)
+                stream.accept_waveform(sr, chunk)
                 emb = extractor.compute(stream)
                 emb_array = np.array(emb)
             except Exception as e:
                 logger.debug("Embedding extraction failed for window %.2f-%.2f: %s", win_start, win_end, e)
                 continue
 
-            if emb_array is not None:
+            if emb_array is not None and len(emb_array) > 0:
                 embeddings.append(emb_array)
                 subsegments.append(SubSegment(start=win_start, end=win_end, parent_idx=idx))
 
