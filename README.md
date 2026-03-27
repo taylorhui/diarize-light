@@ -1,6 +1,6 @@
 # diarize-light
 
-**Fork of FoxNoseTech's diarize: Removing dependencies on torch, torchaudio and silero_vad. Use onnxruntime directly.**
+**Fork of FoxNoseTech's diarize: Remove dependency on torch, torchaudio and silero_vad. Use onnxruntime directly.**
 
 Speaker diarization for Python — answers "who spoke when?" in audio file.
 
