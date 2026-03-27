@@ -12,7 +12,7 @@ Fork of FoxNoseTech's diarize: Removing dependencies on torch, torchaudio and si
 Runs on CPU. No GPU, no API keys, no account signup. Apache 2.0 licensed.
 
 ```bash
-pip install diarize
+pip install git+https://github.com/taylorhui/diarize-light.git
 ```
 
 ```python
