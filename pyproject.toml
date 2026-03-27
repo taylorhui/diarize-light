@@ -75,7 +75,7 @@ Repository = "https://github.com/FoxNoseTech/diarize"
 Issues = "https://github.com/FoxNoseTech/diarize/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/diarize"]
+packages = ["src/diarizelight"]
 
 [tool.ruff]
 target-version = "py39"
