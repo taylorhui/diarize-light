@@ -11,7 +11,7 @@ pip install git+https://github.com/taylorhui/diarize-light.git
 ```
 
 ```python
-from diarize-light import diarize
+from diarizelight import diarize
 
 result = diarize("meeting.wav")
 for seg in result.segments:
@@ -21,7 +21,7 @@ for seg in result.segments:
 ## Quick Start (Similar to FoxNoseTech's diarize)
 
 ```python
-from diarize-light import diarize
+from diarizelight import diarize
 
 result = diarize("meeting.wav")
 
